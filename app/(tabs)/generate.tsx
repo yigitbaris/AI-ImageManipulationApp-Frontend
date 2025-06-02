@@ -65,7 +65,7 @@ export default function Generate() {
 
   // API Configuration - you can change this to your localhost URL
   const API_BASE_URL = "http://192.168.111.2:3000" // For Android emulator (change to your machine's IP for physical device)
-  const AUTH_TOKEN = process.env.AUTH_TOKEN // Just the token value
+  // const AUTH_TOKEN = process.env.AUTH_TOKEN // Just the token value
 
   // Convert image to base64
   const convertImageToBase64 = async (imageUri: string): Promise<string> => {
@@ -108,14 +108,14 @@ export default function Generate() {
       )
       console.log("Filter:", filterName)
       console.log("Image size:", imageBase64.length)
-
+      // console.log("AUTH_TOKEN:", AUTH_TOKEN)
       const response = await fetch(
         `${API_BASE_URL}/api/v1/image-manipulation/filter`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${AUTH_TOKEN}`,
+            // Authorization: `Bearer ${AUTH_TOKEN}`,
           },
           body: JSON.stringify({
             image: imageBase64,
