@@ -4,12 +4,32 @@ import {
   Image,
   ScrollView,
   Alert,
+  Platform,
 } from "react-native"
 import { Text, View } from "@/components/Themed"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { FontAwesome5 } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useState } from "react"
+
+// COLORS inspired by generate.tsx for consistency
+const COLORS = {
+  background: "#0D0D0D", // Darker background
+  backgroundCard: "rgba(255, 255, 255, 0.08)", // More subtle glass effect
+  gradientStart: "#7F1DFF",
+  gradientEnd: "#FF4FCC",
+  textPrimary: "#F5F5F5",
+  textSecondary: "rgba(255, 255, 255, 0.6)",
+  iconPurple: "#7F1DFF",
+  iconWhite: "#FFFFFF",
+  borderColor: "rgba(255, 255, 255, 0.1)",
+  cardShadow: "rgba(0, 0, 0, 0.8)",
+  logoutText: "#FF3B30",
+  white: "#FFFFFF",
+  black: "#000000",
+  grey: "#8E8E93", // From generate.tsx
+  premiumBannerText: "#FFFFFF",
+}
 
 interface ProfileStat {
   id: number
@@ -25,216 +45,146 @@ interface SettingItem {
   action: () => void
   hasArrow?: boolean
   textColor?: string
+  iconColor?: string
 }
+
+// GlassPanel component similar to generate.tsx's GlassCard for consistency
+const GlassPanel = ({
+  children,
+  style,
+}: {
+  children: React.ReactNode
+  style?: any
+}) => <View style={[styles.glassPanelBase, style]}>{children}</View>
 
 export default function Profile() {
   const [user] = useState({
     name: "Alex Johnson",
-    email: "alex.johnson@email.com",
-    avatar:
-      "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&auto=format",
-    isPremium: false,
-    joinDate: "March 2024",
+    email: "alex.johnson@example.com",
   })
 
-  const stats: ProfileStat[] = [
-    { id: 1, label: "Created", value: "24", icon: "magic" },
-    { id: 2, label: "Saved", value: "12", icon: "heart" },
-    { id: 3, label: "Shared", value: "8", icon: "share-alt" },
+  const stats = [
+    { id: 1, label: "Creations", value: "24", icon: "magic" },
+    { id: 2, label: "Favorites", value: "12", icon: "heart" },
+    { id: 3, label: "Shares", value: "8", icon: "share-alt" },
   ]
 
-  const handleLogout = () => {
-    Alert.alert(
-      "Logout",
-      "Are you sure you want to logout?",
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Logout", style: "destructive", onPress: () => {} },
-      ],
-      { cancelable: true }
-    )
-  }
-
-  const settingsItems: SettingItem[] = [
+  const menuItems = [
     {
       id: 1,
-      title: "Edit Profile",
-      icon: "user-edit",
-      action: () => {},
-      hasArrow: true,
+      title: "Settings",
+      icon: "cog",
+      action: () => console.log("Settings"),
     },
     {
       id: 2,
-      title: "Privacy Settings",
+      title: "Privacy",
       icon: "shield-alt",
-      action: () => {},
-      hasArrow: true,
+      action: () => console.log("Privacy"),
     },
-    {
-      id: 3,
-      title: "Notifications",
-      icon: "bell",
-      action: () => {},
-      hasArrow: true,
-    },
+    // {
+    //   id: 3,
+    //   title: "Notifications",
+    //   icon: "bell",
+    //   action: () => console.log("Notifications"),
+    // },
     {
       id: 4,
-      title: "Help & Support",
+      title: "Help",
       icon: "question-circle",
-      action: () => {},
-      hasArrow: true,
+      action: () => console.log("Help"),
     },
     {
       id: 5,
       title: "About",
       icon: "info-circle",
-      action: () => {},
-      hasArrow: true,
+      action: () => console.log("About"),
     },
     {
       id: 6,
       title: "Logout",
       icon: "sign-out-alt",
-      action: handleLogout,
-      hasArrow: false,
-      textColor: "#e74c3c",
+      action: () => console.log("Logout"),
     },
   ]
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
-        style={styles.content}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={styles.scrollContentContainer}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Profile</Text>
-        </View>
-
-        {/* User Info Card */}
-        <View style={styles.userCard}>
-          <View style={styles.userInfo}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatarIcon}>
-                <FontAwesome5 name="user" size={35} color="#673ab7" />
-              </View>
-              {user.isPremium && (
-                <View style={styles.premiumBadge}>
-                  <FontAwesome5 name="crown" size={12} color="#FFD700" />
-                </View>
-              )}
-            </View>
-            <View style={styles.userDetails}>
-              <Text style={styles.userName}>{user.name}</Text>
-              <Text style={styles.userEmail}>{user.email}</Text>
-            </View>
+        {/* Profile Info */}
+        <GlassPanel style={styles.userCard}>
+          <View style={styles.userDetails}>
+            <Text style={styles.userName}>{user.name}</Text>
+            <Text style={styles.userEmail}>{user.email}</Text>
           </View>
-        </View>
+        </GlassPanel>
 
-        {/* Stats Row */}
-        <View style={styles.statsContainer}>
+        {/* Stats Bar */}
+        <GlassPanel style={styles.statsCard}>
           {stats.map((stat) => (
             <View key={stat.id} style={styles.statItem}>
-              <View style={styles.statIconContainer}>
-                <FontAwesome5 name={stat.icon} size={18} color="#673ab7" />
-              </View>
+              <FontAwesome5
+                name={stat.icon as any}
+                size={20}
+                color={COLORS.gradientStart}
+              />
               <Text style={styles.statValue}>{stat.value}</Text>
               <Text style={styles.statLabel}>{stat.label}</Text>
             </View>
           ))}
-        </View>
+        </GlassPanel>
 
-        {/* Premium Card */}
-        {!user.isPremium && (
-          <TouchableOpacity style={styles.premiumCard}>
-            <LinearGradient
-              colors={["#673ab7", "#9c27b0", "#e91e63"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.premiumGradient}
-            >
-              <View style={styles.premiumContent}>
-                <View style={styles.premiumLeft}>
-                  <FontAwesome5 name="crown" size={24} color="#FFD700" />
-                  <View style={styles.premiumTextContainer}>
-                    <Text style={styles.premiumTitle}>Go Premium</Text>
-                    <Text style={styles.premiumSubtitle}>
-                      Unlock unlimited AI filters and features
-                    </Text>
-                  </View>
-                </View>
-                <FontAwesome5 name="arrow-right" size={18} color="#fff" />
+        {/* premium banner */}
+        <TouchableOpacity activeOpacity={0.8}>
+          <LinearGradient
+            colors={[COLORS.gradientStart, COLORS.gradientEnd]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.premiumBanner}
+          >
+            {/* Left: Crown icon */}
+            <FontAwesome5 name="crown" size={20} color={COLORS.white} />
+
+            {/* Center: Title + Subtitle */}
+            <View style={styles.premiumTextContainer}>
+              <Text style={styles.premiumTitle}>Go Premium</Text>
+              <Text style={styles.premiumSubtitle}>
+                Unlock exclusive features
+              </Text>
+            </View>
+
+            {/* Right: Arrow icon */}
+            <FontAwesome5 name="arrow-right" size={16} color={COLORS.white} />
+          </LinearGradient>
+        </TouchableOpacity>
+
+        {/* Menu Items */}
+        {menuItems.map((item, index) => (
+          <TouchableOpacity
+            key={item.id}
+            onPress={item.action}
+            style={styles.settingItemTouchable}
+          >
+            <GlassPanel style={styles.settingItemPanel}>
+              <View style={styles.settingIconContainer}>
+                <FontAwesome5
+                  name={item.icon as any}
+                  size={18}
+                  color={COLORS.gradientStart}
+                />
               </View>
-              <View style={styles.premiumFeatures}>
-                <View style={styles.premiumFeature}>
-                  <FontAwesome5 name="check" size={12} color="#4CAF50" />
-                  <Text style={styles.premiumFeatureText}>
-                    Unlimited generations
-                  </Text>
-                </View>
-                <View style={styles.premiumFeature}>
-                  <FontAwesome5 name="check" size={12} color="#4CAF50" />
-                  <Text style={styles.premiumFeatureText}>
-                    Exclusive AI filters
-                  </Text>
-                </View>
-                <View style={styles.premiumFeature}>
-                  <FontAwesome5 name="check" size={12} color="#4CAF50" />
-                  <Text style={styles.premiumFeatureText}>
-                    Priority processing
-                  </Text>
-                </View>
-              </View>
-            </LinearGradient>
+              <Text style={styles.settingTitleText}>{item.title}</Text>
+              <FontAwesome5
+                name="chevron-right"
+                size={14}
+                color={COLORS.textSecondary}
+              />
+            </GlassPanel>
           </TouchableOpacity>
-        )}
-
-        {/* Settings Section */}
-        <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>Settings</Text>
-          <View style={styles.settingsList}>
-            {settingsItems.map((item, index) => (
-              <TouchableOpacity
-                key={item.id}
-                style={[
-                  styles.settingItem,
-                  index === settingsItems.length - 1 && styles.lastSettingItem,
-                ]}
-                onPress={item.action}
-              >
-                <View style={styles.settingLeft}>
-                  <View
-                    style={[
-                      styles.settingIconContainer,
-                      item.textColor && {
-                        backgroundColor: "rgba(231, 76, 60, 0.1)",
-                      },
-                    ]}
-                  >
-                    <FontAwesome5
-                      name={item.icon}
-                      size={16}
-                      color={item.textColor || "#673ab7"}
-                    />
-                  </View>
-                  <Text
-                    style={[
-                      styles.settingTitle,
-                      item.textColor && { color: item.textColor },
-                    ]}
-                  >
-                    {item.title}
-                  </Text>
-                </View>
-                {item.hasArrow && (
-                  <FontAwesome5 name="chevron-right" size={14} color="#ccc" />
-                )}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   )
@@ -243,230 +193,190 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
-  },
-  header: {
+  scrollContentContainer: {
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    paddingTop: 20,
+    paddingBottom: 50,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#333",
+  profileHeaderOuterContainer: {
+    marginBottom: 20,
+  },
+  glassPanelBase: {
+    backgroundColor: COLORS.backgroundCard,
+    borderRadius: 16,
+    borderColor: COLORS.borderColor,
+    borderWidth: 1,
+    shadowColor: COLORS.cardShadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10,
   },
   userCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  userInfo: {
-    flexDirection: "row",
+    padding: 16,
     alignItems: "center",
+    marginBottom: 24,
   },
   avatarContainer: {
-    position: "relative",
-    marginRight: 16,
-  },
-  avatarIcon: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: "rgba(103, 58, 183, 0.1)",
-    alignItems: "center",
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "rgba(255, 255, 255, 0.1)", // Slightly different from card for layering
     justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)", // White outline for avatar circle
+    position: "relative", // For premium badge
   },
   premiumBadge: {
     position: "absolute",
-    top: -5,
-    right: -5,
-    backgroundColor: "rgba(255, 215, 0, 0.2)",
-    borderRadius: 12,
-    padding: 6,
-    borderWidth: 2,
-    borderColor: "#fff",
+    bottom: -2,
+    right: -2,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: COLORS.background, // So it looks cut into the avatar circle
   },
   userDetails: {
-    flex: 1,
+    alignItems: "center",
+    backgroundColor: "transparent",
   },
   userName: {
     fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
+    fontWeight: "600",
+    color: COLORS.textPrimary,
     marginBottom: 4,
+    textAlign: "center",
   },
   userEmail: {
     fontSize: 14,
-    color: "#666",
-    marginBottom: 2,
+    color: COLORS.textSecondary,
+    textAlign: "center",
   },
-  joinDate: {
-    fontSize: 12,
-    color: "#888",
-  },
-  statsContainer: {
+  statsCard: {
     flexDirection: "row",
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 15,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 24,
+    backgroundColor: "rgba(20, 20, 20, 0.8)",
   },
   statItem: {
-    flex: 1,
     alignItems: "center",
-  },
-  statIconContainer: {
-    backgroundColor: "rgba(103, 58, 183, 0.1)",
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
+    flex: 1,
+    backgroundColor: "transparent",
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: "600",
+    color: COLORS.textPrimary,
+    marginTop: 4,
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
-  premiumCard: {
-    marginHorizontal: 20,
-    marginTop: 20,
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#673ab7",
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  premiumGradient: {
-    padding: 20,
-  },
-  premiumContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 16,
-    backgroundColor: "transparent",
-  },
-  premiumLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
-    backgroundColor: "transparent",
-  },
-  premiumTextContainer: {
-    flex: 1,
-    marginLeft: 12,
-    backgroundColor: "transparent",
-  },
-  premiumTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#FFE4E1",
-    marginBottom: 2,
-  },
-  premiumSubtitle: {
-    fontSize: 14,
-    color: "#F0E6FF",
-  },
-  premiumFeatures: {
-    gap: 8,
-    backgroundColor: "transparent",
-  },
-  premiumFeature: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: "transparent",
-  },
-  premiumFeatureText: {
-    fontSize: 13,
-    color: "#E8D5FF",
-    fontWeight: "500",
-  },
-  settingsSection: {
-    marginHorizontal: 20,
-    marginTop: 20,
+  settingsSectionContainer: {
+    marginTop: 8,
   },
   sectionTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif-bold",
     fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontWeight: "bold",
+    color: COLORS.textPrimary,
+    marginBottom: 12, // Space between title and first setting item
+    paddingLeft: 4, // Small indent to align with card content generally
+  },
+  settingItemTouchable: {
     marginBottom: 12,
   },
-  settingsList: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+  settingItemPanel: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: "rgba(20, 20, 20, 0.8)",
   },
-  settingItem: {
+  firstSettingItemPanel: {
+    // Potentially different styling for the first item (e.g. if part of a larger card)
+  },
+  lastSettingItemPanel: {
+    marginBottom: 0, // No margin for the last item in the list
+  },
+  settingIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+    backgroundColor: "rgba(127, 29, 255, 0.1)",
+  },
+  settingTitleText: {
+    fontSize: 16,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  premiumBanner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderRadius: 16,
+    marginBottom: 24,
+
+    // Drop‐shadow (similar to generateButton in generate.tsx)
+    shadowColor: COLORS.gradientEnd,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.5,
+    shadowRadius: 12,
+    elevation: 10,
   },
-  lastSettingItem: {
-    borderBottomWidth: 0,
+
+  premiumTextContainer: {
+    flex: 1,
+    marginHorizontal: 12,
+    alignItems: "flex-start",
+    backgroundColor: "transparent",
   },
-  settingLeft: {
+
+  premiumTitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif-bold",
+    fontSize: 18,
+    fontWeight: "bold",
+    color: COLORS.premiumBannerText,
+    marginBottom: 2,
+  },
+
+  premiumSubtitle: {
+    fontFamily: Platform.OS === "ios" ? "System" : "sans-serif",
+    fontSize: 13,
+    color: COLORS.premiumBannerText,
+    opacity: 0.85,
+  },
+  searchBar: {
     flexDirection: "row",
     alignItems: "center",
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+  },
+  searchInput: {
     flex: 1,
+    marginHorizontal: 12,
+    backgroundColor: "transparent",
   },
-  settingIconContainer: {
-    backgroundColor: "rgba(103, 58, 183, 0.1)",
-    borderRadius: 10,
-    padding: 10,
-    marginRight: 12,
-  },
-  settingTitle: {
+  searchPlaceholder: {
+    color: COLORS.white,
     fontSize: 16,
-    color: "#333",
-    fontWeight: "500",
   },
 })
