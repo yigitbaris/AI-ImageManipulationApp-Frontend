@@ -12,6 +12,9 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { FontAwesome5 } from "@expo/vector-icons"
 import { useState } from "react"
 import { LinearGradient } from "expo-linear-gradient"
+import { useRouter } from "expo-router"
+import { useGlobalContext } from "../../context/GlobalProvider"
+import { translations } from "../../assets/localizations"
 
 const { width } = Dimensions.get("window")
 const cardPadding = 8 // Consistent padding/gap for grid items
@@ -36,6 +39,8 @@ const COLORS = {
 
 interface DiscoverItem {
   id: number
+  filterId: number // Maps to filter ID in generate.tsx
+  filterName: string
   image: string | any
   height: number // This will determine the staggered effect
   premium: boolean
@@ -45,66 +50,136 @@ interface DiscoverItem {
 const discoverItems: DiscoverItem[] = [
   {
     id: 1,
-    image:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop&crop=face",
-    height: cardWidth * 1.3, // Aspect ratio for cards
+    filterId: 1, // Maps to Ghibli filter
+    filterName: "Ghibli",
+    image: require("../../assets/images/ghibli.png"),
+    height: cardWidth * 1.6,
+    premium: true,
+    likes: 523,
+  },
+  {
+    id: 2,
+    filterId: 2, // Maps to Superhero filter
+    filterName: "Superhero",
+    image: require("../../assets/images/superhero.png"),
+    height: cardWidth * 1.3,
     premium: false,
     likes: 234,
   },
   {
-    id: 2,
-    image: require("../../assets/images/ghibli.png"),
-    height: cardWidth * 1.6,
-    premium: true,
-    likes: 156,
-  },
-  {
     id: 3,
-    image:
-      "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&fit=crop",
-    height: cardWidth * 1.2,
-    premium: false,
-    likes: 89,
-  },
-  {
-    id: 4,
-    image:
-      "https://images.unsplash.com/photo-1604514628550-37477afdf4e3?w=400&fit=crop",
+    filterId: 3, // Maps to Disney Princes filter
+    filterName: "Disney Princes",
+    image: require("../../assets/images/disneyprinces.png"),
     height: cardWidth * 1.5,
     premium: true,
     likes: 412,
   },
   {
-    id: 5,
-    image:
-      "https://images.unsplash.com/photo-1600428877878-1a0fd85beda8?w=400&fit=crop",
-    height: cardWidth * 1.4,
-    premium: false,
-    likes: 78,
-  },
-  {
-    id: 6,
-    image:
-      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&fit=crop&crop=face",
-    height: cardWidth * 1.7,
-    premium: true,
-    likes: 523,
-  },
-  {
-    id: 7,
-    image:
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&fit=crop&crop=face",
-    height: cardWidth * 1.35,
+    id: 4,
+    filterId: 4, // Maps to Van Gogh filter
+    filterName: "Van Gogh",
+    image: require("../../assets/images/vangogh.png"),
+    height: cardWidth * 1.2,
     premium: false,
     likes: 167,
   },
   {
+    id: 5,
+    filterId: 5, // Maps to Armored Knight filter
+    filterName: "Armored Knight",
+    image: require("../../assets/images/armoredman.png"),
+    height: cardWidth * 1.4,
+    premium: false,
+    likes: 156,
+  },
+  {
+    id: 6,
+    filterId: 6, // Maps to 80s Anime filter
+    filterName: "80s Anime",
+    image: require("../../assets/images/80sanime.png"),
+    height: cardWidth * 1.7,
+    premium: true,
+    likes: 298,
+  },
+  {
+    id: 7,
+    filterId: 7, // Maps to Mermaid Fantasy filter
+    filterName: "Mermaid Fantasy",
+    image: require("../../assets/images/mermaid.png"),
+    height: cardWidth * 1.35,
+    premium: false,
+    likes: 89,
+  },
+  {
     id: 8,
+    filterId: 4, // Another Pencil Sketch variation
+    filterName: "Portrait Sketch",
     image:
       "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400&fit=crop&crop=face",
     height: cardWidth * 1.55,
     premium: true,
-    likes: 298,
+    likes: 78,
+  },
+  {
+    id: 9,
+    filterId: 2, // Maps to Starter Pack filter (old)
+    filterName: "Starter Pack",
+    image:
+      "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format",
+    height: cardWidth * 1.3,
+    premium: false,
+    likes: 189,
+  },
+  {
+    id: 10,
+    filterId: 3, // Maps to Oil Painting filter (old)
+    filterName: "Oil Painting",
+    image:
+      "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=400&fit=crop",
+    height: cardWidth * 1.5,
+    premium: true,
+    likes: 321,
+  },
+  {
+    id: 11,
+    filterId: 4, // Maps to Pencil Sketch filter (old)
+    filterName: "Pencil Sketch",
+    image:
+      "https://images.unsplash.com/photo-1599074902614-a3fb3927b6a5?w=400&fit=crop",
+    height: cardWidth * 1.2,
+    premium: false,
+    likes: 145,
+  },
+  {
+    id: 12,
+    filterId: 1, // Another Ghibli variation (old)
+    filterName: "Ghibli Style",
+    image:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&fit=crop&crop=face",
+    height: cardWidth * 1.4,
+    premium: false,
+    likes: 267,
+  },
+  {
+    id: 13,
+    filterId: 2, // Another Starter Pack variation (old)
+    filterName: "Anime Style",
+    image:
+      "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=400&fit=crop&crop=face",
+    height: cardWidth * 1.7,
+    premium: true,
+    likes: 412,
+  },
+  {
+    id: 14,
+    filterId: 3, // Another Oil Painting variation (old)
+    filterName: "Classic Art",
+    image:
+      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&fit=crop&crop=face",
+    height: cardWidth * 1.35,
+    premium: false,
+    likes: 198,
   },
 ]
 
@@ -135,10 +210,30 @@ const GlassHeader = ({
 }
 
 const Discover = () => {
-  const [activeTab, setActiveTab] = useState<"Feed" | "Creators">("Feed")
+  const [activeTab, setActiveTab] = useState<"feed">("feed")
+  const { myLang } = useGlobalContext()
+
+  // Translation helper function
+  const getTranslations = () => {
+    const validLangs = ["tr", "german", "russian", "eng"] as const
+    const currentLang = validLangs.includes(myLang as any) ? myLang : "eng"
+    return (translations as any)[currentLang] || (translations as any).eng
+  }
+
+  const t = getTranslations()
+
+  // Inside Discover component
+  const router = useRouter()
+
+  const handleFilterSelect = (item: DiscoverItem) => {
+    router.push({
+      pathname: "/(tabs)/generate",
+      params: { filter: item.filterId.toString() }, // Use filterId to match generate.tsx filters
+    })
+  }
 
   // Split items into two columns for masonry layout
-  const распределитьПоКолонкам = (items: DiscoverItem[], numCols: number) => {
+  const splitItemsIntoColumns = (items: DiscoverItem[], numCols: number) => {
     const columns: DiscoverItem[][] = Array.from({ length: numCols }, () => [])
     const columnHeights: number[] = Array(numCols).fill(0)
 
@@ -152,12 +247,13 @@ const Discover = () => {
     return columns
   }
 
-  const columns = распределитьПоКолонкам(discoverItems, numColumns)
+  const columns = splitItemsIntoColumns(discoverItems, numColumns)
   const leftColumnItems = columns[0] || []
   const rightColumnItems = columns[1] || []
 
   const renderCard = (item: DiscoverItem, index: number) => (
     <TouchableOpacity
+      onPress={() => handleFilterSelect(item)}
       key={`${item.id}-${index}`}
       style={[styles.card, { height: item.height, width: cardWidth }]} // Width is now fixed
     >
@@ -169,6 +265,11 @@ const Discover = () => {
         style={styles.cardImage}
       />
       <View style={styles.cardInnerBorder} />
+
+      {/* Filter Name Overlay */}
+      {/* <View style={styles.filterNameOverlay}>
+        <Text style={styles.filterNameText}>{item.filterName}</Text>
+      </View> */}
 
       {item.premium && (
         <LinearGradient
@@ -193,18 +294,18 @@ const Discover = () => {
   return (
     <SafeAreaView style={styles.container}>
       <GlassHeader
-        title="Discover"
+        title={t.discoverTab}
         onSearchPress={() => console.log("Search pressed")}
       />
 
       <View style={styles.tabsContainer}>
-        {["Feed", "Creators"].map((tabName) => (
+        {["feed"].map((tabKey) => (
           <TouchableOpacity
-            key={tabName}
+            key={tabKey}
             style={styles.tabButton}
-            onPress={() => setActiveTab(tabName as "Feed" | "Creators")}
+            onPress={() => setActiveTab(tabKey as "feed")}
           >
-            {activeTab === tabName && (
+            {activeTab === tabKey && (
               <LinearGradient
                 colors={[COLORS.gradientStart, COLORS.gradientEnd]}
                 start={{ x: 0, y: 0.5 }}
@@ -215,16 +316,16 @@ const Discover = () => {
             <View
               style={[
                 styles.tabContent,
-                activeTab === tabName ? styles.activeTabContent : {},
+                activeTab === tabKey ? styles.activeTabContent : {},
               ]}
             >
               <Text
                 style={[
                   styles.tabText,
-                  activeTab === tabName ? styles.activeTabText : {},
+                  activeTab === tabKey ? styles.activeTabText : {},
                 ]}
               >
-                {tabName}
+                {(t as any)[tabKey]}
               </Text>
             </View>
           </TouchableOpacity>
@@ -330,7 +431,7 @@ const styles = StyleSheet.create({
   scrollContentContainer: {
     paddingHorizontal: cardPadding, // Gutter on the sides of the grid
     paddingTop: 10, // Space below tabs
-    paddingBottom: 30, // Space at the bottom
+    paddingBottom: 200, // Space at the bottom
   },
   gridContainer: {
     flexDirection: "row",
@@ -410,5 +511,24 @@ const styles = StyleSheet.create({
     color: COLORS.iconWhite, // White icon/text
     marginLeft: 5,
     fontWeight: "600",
+  },
+
+  // Filter Name Overlay
+  filterNameOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    borderRadius: 16,
+  },
+  filterNameText: {
+    fontFamily: Platform.OS === "ios" ? "SF Pro Text" : "sans-serif-bold",
+    fontSize: 14,
+    fontWeight: "bold",
+    color: COLORS.white,
   },
 })

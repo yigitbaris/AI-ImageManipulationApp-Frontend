@@ -5,12 +5,14 @@ import {
   ScrollView,
   Alert,
   Platform,
+  Animated,
+  View as RNView,
 } from "react-native"
 import { Text, View } from "@/components/Themed"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { FontAwesome5, FontAwesome6 } from "@expo/vector-icons"
 import * as ImagePicker from "expo-image-picker"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import React from "react"
 import Toast from "react-native-toast-message"
 import { LinearGradient } from "expo-linear-gradient"
@@ -19,7 +21,10 @@ import FlowingImages from "@/components/FlowingImages"
 import GlassCard from "@/components/GlassCard"
 import FilterSelector from "@/components/FilterSelector"
 import ImagePreview from "@/components/ImagePreview"
-import ResultDisplay from "@/components/ResultDisplay"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { useGlobalContext } from "@/context/GlobalProvider"
+import { translations } from "../../assets/localizations"
+
 // Updated Color Palette
 const COLORS = {
   background: "#121212", // Near-black
@@ -42,52 +47,161 @@ const COLORS = {
 interface Filter {
   id: number
   name: string
+  code: string
   description: string
   icon: string
   mockup: string | any
 }
 
-const filters: Filter[] = [
-  {
-    id: 1,
-    name: "Ghibli",
-    description: "Transform into Studio Ghibli artwork",
-    icon: "paint-brush",
-    mockup: require("../../assets/images/ghibli.png"),
-  },
-  {
-    id: 2,
-    name: "Anime",
-    description: "Convert your photo into anime style art",
-    icon: "user-astronaut",
-    mockup:
-      "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format",
-  },
-  {
-    id: 3,
-    name: "Oil Painting",
-    description: "Turn your photo into an oil painting",
-    icon: "palette",
-    mockup:
-      "https://images.unsplash.com/photo-1579783902614-a3fb3927b6a5?w=500&auto=format",
-  },
-  {
-    id: 4,
-    name: "Pencil Sketch",
-    description: "Convert your photo into a detailed pencil drawing",
-    icon: "pencil-alt",
-    mockup:
-      "https://images.unsplash.com/photo-1599074902614-a3fb3927b6a5?w=500&auto=format",
-  },
-]
-
 export default function Generate() {
+  const router = useRouter()
+  const params = useLocalSearchParams()
+  const passedFilterId = Number(params.filter)
+
+  const globalContext = useGlobalContext()
+  const { myLang } = useGlobalContext()
+
+  // Translation helper function
+  const getTranslations = () => {
+    const validLangs = ["tr", "german", "russian", "eng"] as const
+    const currentLang = validLangs.includes(myLang as any) ? myLang : "eng"
+    return (translations as any)[currentLang] || (translations as any).eng
+  }
+
+  const t = getTranslations()
+
+  // Create filters array with translations
+  const getFilters = (): Filter[] => [
+    {
+      id: 1,
+      name: t.filterGhibli,
+      code: "ghibli",
+      description: t.filterGhibliDesc,
+      icon: "paint-brush",
+      mockup: require("../../assets/images/ghibli.png"),
+    },
+    {
+      id: 2,
+      name: t.filterSuperhero,
+      code: "superhero",
+      description: t.filterSuperheroDesc,
+      icon: "mask",
+      mockup: require("../../assets/images/superhero.png"),
+    },
+    {
+      id: 3,
+      name: t.filterDisneyPrinces,
+      code: "disney-princes",
+      description: t.filterDisneyPrincesDesc,
+      icon: "crown",
+      mockup: require("../../assets/images/disneyprinces.png"),
+    },
+    {
+      id: 4,
+      name: t.filterVanGogh,
+      code: "van-gogh",
+      description: t.filterVanGoghDesc,
+      icon: "palette",
+      mockup: require("../../assets/images/vangogh.png"),
+    },
+    {
+      id: 5,
+      name: t.filterArmoredKnight,
+      code: "armored-knight",
+      description: t.filterArmoredKnightDesc,
+      icon: "shield-alt",
+      mockup: require("../../assets/images/armoredman.png"),
+    },
+    {
+      id: 6,
+      name: t.filter80sAnime,
+      code: "80s-anime",
+      description: t.filter80sAnimeDesc,
+      icon: "tv",
+      mockup: require("../../assets/images/80sanime.png"),
+    },
+    {
+      id: 7,
+      name: t.filterMermaidFantasy,
+      code: "mermaid-fantasy",
+      description: t.filterMermaidFantasyDesc,
+      icon: "water",
+      mockup: require("../../assets/images/mermaid.png"),
+    },
+  ]
+
+  const filters = getFilters()
+
   const [image, setImage] = useState<string | null>(null)
-  const [selectedFilter, setSelectedFilter] = useState<Filter | null>(null)
+  // 2) initialize selectedFilter based on that ID (if any)
+  const [selectedFilter, setSelectedFilter] = useState<Filter | null>(() => {
+    return filters.find((f) => f.id === passedFilterId) || null
+  })
   const [isLoading, setIsLoading] = useState(false)
   const [result, setResult] = useState<any>(null)
+  const [processingMessage, setProcessingMessage] = useState<string>(
+    t.processing
+  )
+
+  const spinValue = useRef(new Animated.Value(0)).current
+  const pulseValue = useRef(new Animated.Value(1)).current
+
+  const filterRef = useRef<RNView>(null)
 
   const API_BASE_URL = "http://192.168.111.2:3000"
+
+  // Spinning animation effect
+  useEffect(() => {
+    if (isLoading) {
+      const spinAnimation = Animated.loop(
+        Animated.timing(spinValue, {
+          toValue: 1,
+          duration: 1000,
+          useNativeDriver: true,
+        })
+      )
+
+      const pulseAnimation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseValue, {
+            toValue: 0.95,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(pulseValue, {
+            toValue: 1,
+            duration: 800,
+            useNativeDriver: true,
+          }),
+        ])
+      )
+
+      spinAnimation.start()
+      pulseAnimation.start()
+
+      return () => {
+        spinAnimation.stop()
+        pulseAnimation.stop()
+      }
+    } else {
+      spinValue.setValue(0)
+      pulseValue.setValue(1)
+    }
+  }, [isLoading])
+
+  useEffect(() => {
+    if (passedFilterId) {
+      const matched = filters.find((f) => f.id === passedFilterId)
+      if (matched) {
+        setSelectedFilter(matched)
+      }
+    }
+  }, [passedFilterId])
+
+  const spin = spinValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  })
 
   const convertImageToBase64 = async (imageUri: string): Promise<string> => {
     try {
@@ -96,16 +210,16 @@ export default function Generate() {
         encoding: FileSystem.EncodingType.Base64,
       })
 
-      // “data:image/jpeg;base64,” öneki ekleyin
-      // NOT: Eğer fotoğrafınız .png ise “image/png” yazmalısınız
+      // "data:image/jpeg;base64," öneki ekleyin
+      // NOT: Eğer fotoğrafınız .png ise "image/png" yazmalısınız
       const dataUri = `data:image/jpeg;base64,${base64.trim()}`
       return dataUri
     } catch (error) {
       console.error("Failed to convert image to base64:", error)
       Toast.show({
         type: "error",
-        text1: "Conversion Error",
-        text2: "Failed to prepare image.",
+        text1: t.conversionError,
+        text2: t.failedToPrepareImage,
       })
       throw new Error("Failed to convert image to base64")
     }
@@ -146,10 +260,10 @@ export default function Generate() {
       console.error("API Error details:", error)
       Toast.show({
         type: "error",
-        text1: "API Error",
-        text2: error.message || "Failed to connect to server",
+        text1: t.apiError,
+        text2: error.message || t.failedToConnectServer,
       })
-      throw new Error(error.message || "Failed to connect to server")
+      throw new Error(error.message || t.failedToConnectServer)
     }
   }
 
@@ -157,8 +271,8 @@ export default function Generate() {
     if (!selectedFilter) {
       Toast.show({
         type: "error",
-        text1: "No Filter Selected",
-        text2: "Please choose an AI filter.",
+        text1: t.noFilterSelected,
+        text2: t.pleaseChooseFilter,
         position: "top",
       })
       return
@@ -167,8 +281,8 @@ export default function Generate() {
     if (!image) {
       Toast.show({
         type: "error",
-        text1: "No Image Selected",
-        text2: "Please select or take a photo.",
+        text1: t.noImageSelected,
+        text2: t.pleaseSelectPhoto,
         position: "top",
       })
       return
@@ -176,13 +290,27 @@ export default function Generate() {
 
     setIsLoading(true)
     setResult(null)
+
+    // Set initial message
+    setProcessingMessage(t.processingInitial)
+
     Toast.show({
       type: "info",
       text1: "🎨 Processing...",
-      text2: "AI magic is happening!",
+      text2: t.aiMagicHappening,
       position: "top",
       visibilityTime: 3000,
     })
+
+    // Switch to "Processing..." after 5 seconds
+    const messageTimeout = setTimeout(() => {
+      setProcessingMessage(t.processingMasterpiece)
+    }, 5000)
+
+    // Switch to final message after 10 seconds
+    const finalMessageTimeout = setTimeout(() => {
+      setProcessingMessage(t.processingAlmostReady)
+    }, 10000)
 
     try {
       const imageBase64 = await convertImageToBase64(image)
@@ -192,22 +320,27 @@ export default function Generate() {
         setResult(apiResult)
         Toast.show({
           type: "success",
-          text1: "✨ Magic Complete!",
-          text2: "Your AI artwork is ready.",
+          text1: t.magicComplete,
+          text2: t.artworkReady,
           position: "top",
         })
+        globalContext.incrementGenerationCount()
       } else {
-        Toast.show({
-          type: "error",
-          text1: "Filter Failed",
-          text2: apiResult.msg || "Something went wrong.",
-          position: "top",
-        })
+        throw new Error(apiResult.msg || "Unknown API error")
       }
     } catch (error: any) {
-      // Error already shown by applyFilterAPI or convertImageToBase64
+      console.error("Generation error:", error)
+      Toast.show({
+        type: "error",
+        text1: t.generationFailed,
+        text2: error.message || t.pleaseTryAgain,
+        position: "top",
+      })
     } finally {
+      clearTimeout(messageTimeout)
+      clearTimeout(finalMessageTimeout)
       setIsLoading(false)
+      setProcessingMessage(t.processing) // Reset for next time
     }
   }
 
@@ -227,8 +360,8 @@ export default function Generate() {
       console.error("ImagePicker Error:", error)
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Could not open gallery.",
+        text1: t.fail,
+        text2: t.couldNotOpenGallery,
       })
     }
   }
@@ -237,10 +370,7 @@ export default function Generate() {
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync()
       if (status !== "granted") {
-        Alert.alert(
-          "Permission Denied",
-          "Camera permission is required to take photos."
-        )
+        Alert.alert(t.permissionDenied, t.cameraPermissionRequired)
         return
       }
 
@@ -257,8 +387,8 @@ export default function Generate() {
       console.error("Camera Error:", error)
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: "Could not open camera.",
+        text1: t.fail,
+        text2: t.couldNotOpenCamera,
       })
     }
   }
@@ -297,7 +427,7 @@ export default function Generate() {
           <FlowingImages onPickImage={pickImage} onTakePhoto={takePhoto} />
         ) : (
           <>
-            <View style={{ marginTop: 20 }} />
+            <View style={{ marginTop: 50 }} />
             <ImagePreview
               imageUri={image}
               onChangePhoto={() => {
@@ -305,65 +435,85 @@ export default function Generate() {
                 setResult(null)
                 setSelectedFilter(null)
               }}
-            />
-
-            <FilterSelector
-              filters={filters}
-              selectedFilter={selectedFilter}
-              onFilterSelect={setSelectedFilter}
-            />
-
-            <ResultDisplay
+              isLoading={isLoading}
               result={result}
               onDeleteResult={() => setResult(null)}
               cleanBase64ForDisplay={cleanBase64ForDisplay}
             />
+
+            <RNView ref={filterRef}>
+              <FilterSelector
+                filters={filters}
+                selectedFilter={selectedFilter}
+                onFilterSelect={(filter: Filter) => setSelectedFilter(filter)}
+              />
+            </RNView>
           </>
         )}
       </ScrollView>
 
       {image && (
         <View style={styles.generateButtonContainer}>
-          <TouchableOpacity
-            onPress={handleGenerate}
-            disabled={isLoading}
-            activeOpacity={0.8}
+          <Animated.View
+            style={[{ transform: [{ scale: isLoading ? pulseValue : 1 }] }]}
           >
-            <LinearGradient
-              colors={
-                isLoading
-                  ? [COLORS.grey, COLORS.grey]
-                  : [COLORS.gradientStart, COLORS.gradientEnd]
-              }
-              start={{ x: 0, y: 0.5 }}
-              end={{ x: 1, y: 0.5 }}
-              style={[
-                styles.generateButton,
-                isLoading && styles.generateButtonDisabled,
-              ]}
+            <TouchableOpacity
+              onPress={handleGenerate}
+              disabled={isLoading}
+              activeOpacity={0.8}
             >
-              {isLoading ? (
-                <>
-                  <FontAwesome5
-                    name="spinner"
-                    size={20}
-                    color={COLORS.iconWhite}
-                    style={styles.loadingIcon}
-                  />
-                  <Text style={styles.generateButtonText}>Processing...</Text>
-                </>
-              ) : (
-                <>
-                  <FontAwesome6
-                    name="wand-magic-sparkles"
-                    size={20}
-                    color={COLORS.iconWhite}
-                  />
-                  <Text style={styles.generateButtonText}>Generate Photo</Text>
-                </>
-              )}
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={
+                  isLoading
+                    ? [COLORS.grey, COLORS.grey]
+                    : [COLORS.gradientStart, COLORS.gradientEnd]
+                }
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={[
+                  styles.generateButton,
+                  isLoading && styles.generateButtonDisabled,
+                ]}
+              >
+                {isLoading ? (
+                  <>
+                    <Animated.View
+                      style={[
+                        styles.loadingIcon,
+                        {
+                          transform: [
+                            {
+                              rotate: spin,
+                            },
+                          ],
+                        },
+                      ]}
+                    >
+                      <FontAwesome5
+                        name="spinner"
+                        size={20}
+                        color={COLORS.iconWhite}
+                      />
+                    </Animated.View>
+                    <Text style={styles.generateButtonText}>
+                      {processingMessage}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <FontAwesome6
+                      name="wand-magic-sparkles"
+                      size={20}
+                      color={COLORS.iconWhite}
+                    />
+                    <Text style={styles.generateButtonText}>
+                      {t.generatePhoto}
+                    </Text>
+                  </>
+                )}
+              </LinearGradient>
+            </TouchableOpacity>
+          </Animated.View>
         </View>
       )}
       <Toast />
@@ -395,7 +545,7 @@ const styles = StyleSheet.create({
   },
   scrollContentContainer: {
     paddingHorizontal: 16,
-    paddingBottom: 120, // Space for the generate button
+    paddingBottom: 200, // Space for the generate button
     alignItems: "center", // Center content like upload prompt
   },
   headerContainer: {
@@ -622,5 +772,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
     shadowColor: COLORS.grey,
   },
-  loadingIcon: {},
+  loadingIcon: {
+    marginRight: 8,
+    transform: [{ rotate: "0deg" }],
+  },
 })

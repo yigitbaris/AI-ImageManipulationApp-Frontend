@@ -13,6 +13,8 @@ import { FontAwesome5, FontAwesome6 } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { Text } from "./Themed"
 import GlassCard from "./GlassCard"
+import { useGlobalContext } from "../context/GlobalProvider"
+import { translations } from "../assets/localizations"
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window")
 
@@ -69,6 +71,17 @@ const FlowingImages: React.FC<FlowingImagesProps> = ({
   onPickImage,
   onTakePhoto,
 }) => {
+  const { myLang } = useGlobalContext()
+
+  // Translation helper function
+  const getTranslations = () => {
+    const validLangs = ["tr", "german", "russian", "eng"] as const
+    const currentLang = validLangs.includes(myLang as any) ? myLang : "eng"
+    return (translations as any)[currentLang] || (translations as any).eng
+  }
+
+  const t = getTranslations()
+
   // 3 adet Animated.Value (üç sütun için)
   // Hepsini başlangıçta 0 olarak tanımlıyoruz.
   const animatedValues = useRef([
@@ -184,10 +197,8 @@ const FlowingImages: React.FC<FlowingImagesProps> = ({
                 />
               </GlassCard>
             </View>
-            <Text style={styles.uploadTitle}>Start Your Creation</Text>
-            <Text style={styles.uploadSubtitle}>
-              Pick an image or take a new photo to apply AI filters.
-            </Text>
+            <Text style={styles.uploadTitle}>{t.startYourCreation}</Text>
+            <Text style={styles.uploadSubtitle}>{t.pickImageSubtitle}</Text>
             <View style={styles.uploadButtonsContainer}>
               <TouchableOpacity
                 style={styles.uploadButton}
@@ -198,7 +209,7 @@ const FlowingImages: React.FC<FlowingImagesProps> = ({
                   size={20}
                   color={COLORS.iconWhite}
                 />
-                <Text style={styles.uploadButtonText}>From Gallery</Text>
+                <Text style={styles.uploadButtonText}>{t.fromGallery}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.uploadButton}
@@ -209,7 +220,7 @@ const FlowingImages: React.FC<FlowingImagesProps> = ({
                   size={20}
                   color={COLORS.iconWhite}
                 />
-                <Text style={styles.uploadButtonText}>Take Photo</Text>
+                <Text style={styles.uploadButtonText}>{t.takePhoto}</Text>
               </TouchableOpacity>
             </View>
           </View>

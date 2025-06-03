@@ -10,7 +10,13 @@ import { Text, View } from "@/components/Themed"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { FontAwesome5 } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useRouter } from "expo-router"
+import LanguagePicker from "@/components/LanguagePicker"
+import FlagList from "@/components/FlagList"
+import { translations } from "@/assets/localizations"
+import { useGlobalContext } from "@/context/GlobalProvider"
+import { storeData } from "@/utils/localStorage"
 
 // COLORS inspired by generate.tsx for consistency
 const COLORS = {
@@ -48,6 +54,11 @@ interface SettingItem {
   iconColor?: string
 }
 
+interface LanguageSelection {
+  code: string
+  name: string
+}
+
 // GlassPanel component similar to generate.tsx's GlassCard for consistency
 const GlassPanel = ({
   children,
@@ -58,55 +69,86 @@ const GlassPanel = ({
 }) => <View style={[styles.glassPanelBase, style]}>{children}</View>
 
 export default function Profile() {
+  const [isModalVisible, setIsModalVisible] = useState(false)
+  const [pickedLanguage, setPickedLanguage] =
+    useState<LanguageSelection | null>(null)
+
+  const { myLang, setMyLang, imageGenerationCount } = useGlobalContext()
   const [user] = useState({
     name: "Alex Johnson",
     email: "alex.johnson@example.com",
   })
+  const router = useRouter()
+
+  // Safe way to access translations
+  const getTranslations = () => {
+    const validLangs = ["tr", "german", "russian", "eng"] as const
+    const currentLang = validLangs.includes(myLang as any) ? myLang : "eng"
+    return (translations as any)[currentLang] || (translations as any).eng
+  }
+
+  const t = getTranslations()
 
   const stats = [
-    { id: 1, label: "Creations", value: "24", icon: "magic" },
-    { id: 2, label: "Favorites", value: "12", icon: "heart" },
-    { id: 3, label: "Shares", value: "8", icon: "share-alt" },
+    {
+      id: 1,
+      label: t.creations,
+      value: imageGenerationCount.toString(),
+      icon: "magic",
+    },
+    { id: 2, label: t.favorites, value: "12", icon: "heart" },
+    { id: 3, label: t.shares, value: "8", icon: "share-alt" },
   ]
 
   const menuItems = [
     {
       id: 1,
-      title: "Settings",
+      title: t.settingsMenu,
       icon: "cog",
       action: () => console.log("Settings"),
     },
     {
       id: 2,
-      title: "Privacy",
+      title: t.privacy,
       icon: "shield-alt",
-      action: () => console.log("Privacy"),
+      action: () => router.push("/auth/privacy"),
     },
-    // {
-    //   id: 3,
-    //   title: "Notifications",
-    //   icon: "bell",
-    //   action: () => console.log("Notifications"),
-    // },
+    {
+      id: 3,
+      title: t.languageMenu,
+      icon: "language",
+      action: () => setIsModalVisible(true),
+    },
     {
       id: 4,
-      title: "Help",
+      title: t.help,
       icon: "question-circle",
       action: () => console.log("Help"),
     },
     {
       id: 5,
-      title: "About",
+      title: t.about,
       icon: "info-circle",
       action: () => console.log("About"),
     },
     {
       id: 6,
-      title: "Logout",
+      title: t.logout,
       icon: "sign-out-alt",
       action: () => console.log("Logout"),
     },
   ]
+
+  const changeLanguage = async (language: string) => {
+    await storeData("lang", language)
+    setMyLang(language)
+  }
+
+  useEffect(() => {
+    if (pickedLanguage?.code) {
+      changeLanguage(pickedLanguage.code)
+    }
+  }, [pickedLanguage])
 
   return (
     <SafeAreaView style={styles.container}>
@@ -150,9 +192,9 @@ export default function Profile() {
 
             {/* Center: Title + Subtitle */}
             <View style={styles.premiumTextContainer}>
-              <Text style={styles.premiumTitle}>Go Premium</Text>
+              <Text style={styles.premiumTitle}>{t.goPremium}</Text>
               <Text style={styles.premiumSubtitle}>
-                Unlock exclusive features
+                {t.unlockExclusiveFeatures}
               </Text>
             </View>
 
@@ -185,6 +227,16 @@ export default function Profile() {
             </GlassPanel>
           </TouchableOpacity>
         ))}
+        <LanguagePicker
+          isVisible={isModalVisible}
+          onClose={() => setIsModalVisible(false)}
+          langText={t.language || "Language"}
+        >
+          <FlagList
+            onSelect={setPickedLanguage}
+            onCloseModal={() => setIsModalVisible(false)}
+          />
+        </LanguagePicker>
       </ScrollView>
     </SafeAreaView>
   )
@@ -198,7 +250,7 @@ const styles = StyleSheet.create({
   scrollContentContainer: {
     paddingHorizontal: 20,
     paddingTop: 20,
-    paddingBottom: 50,
+    paddingBottom: 200,
   },
   profileHeaderOuterContainer: {
     marginBottom: 20,

@@ -10,6 +10,8 @@ import {
 import { FontAwesome5 } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { Text } from "./Themed"
+import { useGlobalContext } from "../context/GlobalProvider"
+import { translations } from "../assets/localizations"
 
 // Updated Color Palette (matching generate.tsx)
 const COLORS = {
@@ -23,6 +25,7 @@ const COLORS = {
 interface Filter {
   id: number
   name: string
+  code: string
   description: string
   icon: string
   mockup: string | any
@@ -39,15 +42,31 @@ const FilterSelector: React.FC<FilterSelectorProps> = ({
   selectedFilter,
   onFilterSelect,
 }) => {
+  const { myLang } = useGlobalContext()
+
+  // Translation helper function
+  const getTranslations = () => {
+    const validLangs = ["tr", "german", "russian", "eng"] as const
+    const currentLang = validLangs.includes(myLang as any) ? myLang : "eng"
+    return (translations as any)[currentLang] || (translations as any).eng
+  }
+
+  const t = getTranslations()
+
+  // Seçili öğeyi başa alıyoruz
+  const sortedFilters = selectedFilter
+    ? [selectedFilter, ...filters.filter((f) => f.id !== selectedFilter.id)]
+    : filters
+
   return (
     <View style={styles.filtersSection}>
-      <Text style={styles.filtersTitle}>Select AI Filter</Text>
+      <Text style={styles.filtersTitle}>{t.selectAIFilter}</Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filtersScrollContainer}
       >
-        {filters.map((filter) => (
+        {sortedFilters.map((filter) => (
           <TouchableOpacity
             key={filter.id}
             style={[
@@ -66,7 +85,6 @@ const FilterSelector: React.FC<FilterSelectorProps> = ({
             />
             {selectedFilter?.id === filter.id && (
               <>
-                {/* Left border with fade to center */}
                 <LinearGradient
                   colors={[
                     COLORS.gradientStart,
@@ -77,7 +95,6 @@ const FilterSelector: React.FC<FilterSelectorProps> = ({
                   end={{ x: 1, y: 0 }}
                   style={styles.selectedFilterBorderLeft}
                 />
-                {/* Right border with fade to center */}
                 <LinearGradient
                   colors={[
                     "transparent",

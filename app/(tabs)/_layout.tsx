@@ -4,6 +4,8 @@ import Entypo from "@expo/vector-icons/Entypo"
 import { Link, Tabs } from "expo-router"
 import { FontAwesome5, FontAwesome6 } from "@expo/vector-icons"
 import { Platform } from "react-native"
+import { useGlobalContext } from "@/context/GlobalProvider"
+import { translations } from "@/assets/localizations"
 
 // Updated color palette to match gradient-bg.png
 const COLORS = {
@@ -24,6 +26,17 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
+  const { myLang } = useGlobalContext()
+
+  // Safe way to access translations
+  const getTranslations = () => {
+    const validLangs = ["tr", "german", "russian", "eng"] as const
+    const currentLang = validLangs.includes(myLang as any) ? myLang : "eng"
+    return (translations as any)[currentLang] || (translations as any).eng
+  }
+
+  const t = getTranslations()
+
   return (
     <Tabs
       screenOptions={{
@@ -60,7 +73,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="generate"
         options={{
-          title: "Generate",
+          title: t.generateTab,
           headerShown: false,
           tabBarIcon: ({ color }) => (
             <FontAwesome6
@@ -75,7 +88,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="discover"
         options={{
-          title: "Discover",
+          title: t.discoverTab,
           headerShown: false,
           tabBarIcon: ({ color }) => (
             <FontAwesome5
@@ -91,7 +104,7 @@ export default function TabLayout() {
         name="profile"
         options={{
           headerShown: false,
-          title: "Profile",
+          title: t.profileTab,
           tabBarIcon: ({ color }) => (
             <FontAwesome5
               name="user-circle"
