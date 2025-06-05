@@ -131,12 +131,12 @@ export default function Profile() {
       icon: "info-circle",
       action: () => console.log("About"),
     },
-    {
-      id: 6,
-      title: t.logout,
-      icon: "sign-out-alt",
-      action: () => console.log("Logout"),
-    },
+    // {
+    //   id: 6,
+    //   title: t.logout,
+    //   icon: "sign-out-alt",
+    //   action: () => console.log("Logout"),
+    // },
   ]
 
   const changeLanguage = async (language: string) => {
@@ -157,12 +157,12 @@ export default function Profile() {
         contentContainerStyle={styles.scrollContentContainer}
       >
         {/* Profile Info */}
-        <GlassPanel style={styles.userCard}>
+        {/* <GlassPanel style={styles.userCard}>
           <View style={styles.userDetails}>
             <Text style={styles.userName}>{user.name}</Text>
             <Text style={styles.userEmail}>{user.email}</Text>
           </View>
-        </GlassPanel>
+        </GlassPanel> */}
 
         {/* Stats Bar */}
         <GlassPanel style={styles.statsCard}>

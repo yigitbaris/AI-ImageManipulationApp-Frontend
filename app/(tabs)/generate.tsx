@@ -16,7 +16,6 @@ import { useState, useRef, useEffect } from "react"
 import React from "react"
 import Toast from "react-native-toast-message"
 import { LinearGradient } from "expo-linear-gradient"
-import * as FileSystem from "expo-file-system"
 import FlowingImages from "@/components/FlowingImages"
 import GlassCard from "@/components/GlassCard"
 import FilterSelector from "@/components/FilterSelector"
@@ -24,6 +23,10 @@ import ImagePreview from "@/components/ImagePreview"
 import { useLocalSearchParams, useRouter } from "expo-router"
 import { useGlobalContext } from "@/context/GlobalProvider"
 import { translations } from "../../assets/localizations"
+import AppOpenAdManager from "@/components/AppOpenAdManager"
+
+import * as FileSystem from "expo-file-system"
+import * as ImageManipulator from "expo-image-manipulator"
 
 // Updated Color Palette
 const COLORS = {
@@ -148,7 +151,11 @@ export default function Generate() {
 
   const filterRef = useRef<RNView>(null)
 
-  const API_BASE_URL = "http://192.168.111.2:3000"
+  // Use different URLs based on platform
+  const API_BASE_URL =
+    Platform.OS === "android"
+      ? "http://10.0.2.2:3000" // Android emulator localhost
+      : "http://192.168.111.2:3000" // iOS simulator or physical device
 
   // Spinning animation effect
   useEffect(() => {
@@ -204,24 +211,53 @@ export default function Generate() {
   })
 
   const convertImageToBase64 = async (imageUri: string): Promise<string> => {
-    try {
-      // Raw base64 elde edin
-      const base64 = await FileSystem.readAsStringAsync(imageUri, {
-        encoding: FileSystem.EncodingType.Base64,
-      })
+    // try {
+    //   // Raw base64 elde edin
+    //   const base64 = await FileSystem.readAsStringAsync(imageUri, {
+    //     encoding: FileSystem.EncodingType.Base64,
+    //   })
 
-      // "data:image/jpeg;base64," öneki ekleyin
-      // NOT: Eğer fotoğrafınız .png ise "image/png" yazmalısınız
-      const dataUri = `data:image/jpeg;base64,${base64.trim()}`
-      return dataUri
+    //   // "data:image/jpeg;base64," öneki ekleyin
+    //   // NOT: Eğer fotoğrafınız .png ise "image/png" yazmalısınız
+    //   const dataUri = `data:image/jpeg;base64,${base64.trim()}`
+    //   return dataUri
+    // } catch (error) {
+    //   console.error("Failed to convert image to base64:", error)
+    //   Toast.show({
+    //     type: "error",
+    //     text1: t.conversionError,
+    //     text2: t.failedToPrepareImage,
+    //   })
+    //   throw new Error("Failed to convert image to base64")
+    // }
+    try {
+      // 1.1) Önce resmi yeniden boyutlandır ve JPEG’e sıkıştır, base64 talep et
+      const manipResult = await ImageManipulator.manipulateAsync(
+        imageUri,
+        [
+          { resize: { width: 800 } }, // Genisligi 800px'e indir; orantıyı korur
+        ],
+        {
+          compress: 0.5, // %50 kalite (0.0 - 1.0 arasında)
+          format: ImageManipulator.SaveFormat.JPEG,
+          base64: true, // base64 dizgesi de dönecek
+        }
+      )
+
+      if (!manipResult.base64) {
+        throw new Error("Manipulated image did not return base64")
+      }
+
+      // 1.2) API’ye gönderirken "data:image/jpeg;base64," prefix’ini ekleyebiliriz
+      return `data:image/jpeg;base64,${manipResult.base64}`
     } catch (error) {
-      console.error("Failed to convert image to base64:", error)
+      console.error("Failed to convert/compress image to base64:", error)
       Toast.show({
         type: "error",
-        text1: t.conversionError,
-        text2: t.failedToPrepareImage,
+        text1: "Resim işlenemedi",
+        text2: "Sunucuya gönderilecek resim hazırlanamadı",
       })
-      throw new Error("Failed to convert image to base64")
+      throw error
     }
   }
 
@@ -236,34 +272,52 @@ export default function Generate() {
 
   const applyFilterAPI = async (imageBase64: string, filterName: string) => {
     try {
+      console.log("Platform:", Platform.OS)
+      console.log("API_BASE_URL:", API_BASE_URL)
       console.log("filterName", filterName)
       console.log("imageBase64", imageBase64.slice(0, 100))
-      const response = await fetch(
-        `${API_BASE_URL}/api/v1/image-manipulation/filter`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            image: imageBase64,
-            filter: filterName.toLowerCase(), // Ensure filter name is lowercase if API expects it
-          }),
-        }
-      )
+
+      const requestUrl = `${API_BASE_URL}/api/v1/image-manipulation/filter`
+      console.log("Making request to:", requestUrl)
+
+      const response = await fetch(requestUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          image: imageBase64,
+          filter: filterName.toLowerCase(), // Ensure filter name is lowercase if API expects it
+        }),
+      })
+
+      console.log("Response status:", response.status)
+      console.log("Response ok:", response.ok)
+
       const data = await response.json()
+      console.log("Response data keys:", Object.keys(data))
+
       if (!response.ok) {
         throw new Error(data.msg || `API Error: ${response.status}`)
       }
       return data
     } catch (error: any) {
       console.error("API Error details:", error)
+
+      // More specific error messages
+      let errorMessage = t.failedToConnectServer
+      if (error.name === "TimeoutError") {
+        errorMessage = "Request timed out - server may be slow"
+      } else if (error.message.includes("Network request failed")) {
+        errorMessage = `Cannot connect to server at ${API_BASE_URL}. Check if server is running and accessible.`
+      }
+
       Toast.show({
         type: "error",
         text1: t.apiError,
-        text2: error.message || t.failedToConnectServer,
+        text2: error.message || errorMessage,
       })
-      throw new Error(error.message || t.failedToConnectServer)
+      throw new Error(error.message || errorMessage)
     }
   }
 
@@ -399,6 +453,7 @@ export default function Generate() {
         source={require("../../assets/images/gradient-bg.png")}
         style={styles.backgroundImage}
       />
+      <AppOpenAdManager />
       {/* <LinearGradient
         colors={[COLORS.gradientStart, COLORS.gradientEnd]}
         start={{ x: 0, y: 0 }}

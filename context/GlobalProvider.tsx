@@ -7,6 +7,13 @@ import React, {
 } from "react"
 import { readData, storeData } from "../utils/localStorage"
 import * as Localization from "expo-localization"
+import mobileAds from "react-native-google-mobile-ads"
+import {
+  getTrackingPermissionsAsync,
+  PermissionStatus,
+  requestTrackingPermissionsAsync,
+} from "expo-tracking-transparency"
+import { Platform } from "react-native"
 
 interface GlobalContextType {
   myLang: string
@@ -79,8 +86,40 @@ const GlobalProvider: React.FC<GlobalProviderProps> = ({ children }) => {
   }
 
   useEffect(() => {
-    initLanguage()
-    initGenerationCount()
+    // initLanguage()
+    // initGenerationCount()
+    // mobileAds()
+    //   .initialize()
+    //   .then((adapterStatuses) => {
+    //     // Initialization complete!
+    //     console.log("mobile ads initialize")
+    //   })
+
+    ;(async () => {
+      await initLanguage()
+      await initGenerationCount()
+
+      // --- ATT on iOS 14+ ---
+      if (Platform.OS === "ios") {
+        try {
+          const { status } = await getTrackingPermissionsAsync()
+          if (status === PermissionStatus.UNDETERMINED) {
+            await requestTrackingPermissionsAsync()
+          }
+          // You can inspect status here: "authorized" vs "denied"
+        } catch (e) {
+          console.warn("Error checking/requesting ATT permission:", e)
+        }
+      }
+
+      // --- AdMob initialization (both platforms) ---
+      try {
+        const adapterStatuses = await mobileAds().initialize()
+        console.log("✅ AdMob initialized:", adapterStatuses)
+      } catch (e) {
+        console.warn("⚠️ AdMob initialization failed:", e)
+      }
+    })()
   }, [])
 
   const value: GlobalContextType = {

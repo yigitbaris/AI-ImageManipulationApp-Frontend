@@ -15,6 +15,7 @@ import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useGlobalContext } from "../../context/GlobalProvider"
 import { translations } from "../../assets/localizations"
+import { BannerAd, BannerAdSize, TestIds } from "react-native-google-mobile-ads"
 
 const { width } = Dimensions.get("window")
 const cardPadding = 8 // Consistent padding/gap for grid items
@@ -299,37 +300,10 @@ const Discover = () => {
       />
 
       <View style={styles.tabsContainer}>
-        {["feed"].map((tabKey) => (
-          <TouchableOpacity
-            key={tabKey}
-            style={styles.tabButton}
-            onPress={() => setActiveTab(tabKey as "feed")}
-          >
-            {activeTab === tabKey && (
-              <LinearGradient
-                colors={[COLORS.gradientStart, COLORS.gradientEnd]}
-                start={{ x: 0, y: 0.5 }}
-                end={{ x: 1, y: 0.5 }}
-                style={styles.activeTabGradient}
-              />
-            )}
-            <View
-              style={[
-                styles.tabContent,
-                activeTab === tabKey ? styles.activeTabContent : {},
-              ]}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === tabKey ? styles.activeTabText : {},
-                ]}
-              >
-                {(t as any)[tabKey]}
-              </Text>
-            </View>
-          </TouchableOpacity>
-        ))}
+        <BannerAd
+          size={BannerAdSize.ANCHORED_ADAPTIVE_BANNER}
+          unitId={TestIds.BANNER}
+        />
       </View>
 
       <ScrollView
